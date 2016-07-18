@@ -1,0 +1,27 @@
+{
+  "name": "mse-video-server",
+  "version": "0.0.1",
+  "description": "Node application to stream video content utilising MSE",
+  "main": "app/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Node",
+    "MSE",
+    "Video"
+  ],
+  "author": "@johnhornsby",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-core": "^6.10.4",
+    "babel-loader": "^6.2.4",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-preset-stage-0": "^6.5.0",
+    "webpack": "^1.13.1",
+    "webpack-dev-server": "^1.14.1"
+  },
+  "babel": {
+    "presets": ["es2015", "stage-0"]
+  }
+}
