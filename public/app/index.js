@@ -1,12 +1,14 @@
+const NUM_CHUNKS = 5;
+
 class Main {
-
-
 
 	_mediaSource = null;
 
 	_mediaSourceBuffer = null;
 
 	_video = null;
+
+	_chunkIndex = 0;
 
 	constructor() {
 		this._init();
@@ -53,7 +55,6 @@ class Main {
 
 
 	_chunkVideo(uInt8Array) {
-		var NUM_CHUNKS = 5;
 
 		var file = new Blob([uInt8Array], {type: 'video/webm'});
 		var chunkSize = Math.ceil(file.size / NUM_CHUNKS);
@@ -66,32 +67,49 @@ class Main {
 
 		var self = this;
 
-		(function readChunk_(i) {
-			var reader = new FileReader();
-
-			// Reads aren't guaranteed to finish in the same order they're started in,
-			// so we need to read + append the next chunk after the previous reader
-			// is done (onload is fired).
-			reader.onload = function(e) {
-				self._mediaSourceBuffer.appendBuffer(new Uint8Array(e.target.result));
-				console.log('appending chunk:' + i);
-				if (i == NUM_CHUNKS - 1) {
-					self._mediaSource.endOfStream();
-				} else {
-					if (self._video.paused) {
-						self._video.play(); // Start playing after 1st chunk is appended.
-					}
-					readChunk_(++i);
-				}
-			};
-
-			var startByte = chunkSize * i;
-			var chunk = file.slice(startByte, startByte + chunkSize);
-
-			reader.readAsArrayBuffer(chunk);
-		})(i);  // Start the recursive call by self calling.
-
+		this._readChunk(chunkSize, file);
 	}
+
+
+	_readChunk(chunkSize, file) {
+		var reader = new FileReader();
+
+		var startByte = chunkSize * this._chunkIndex;
+		var chunk = file.slice(startByte, startByte + chunkSize);
+
+		var self = this;
+
+		// Reads aren't guaranteed to finish in the same order they're started in,
+		// so we need to read + append the next chunk after the previous reader
+		// is done (onload is fired).
+		reader.onload = function(event) {
+			self._mediaSourceBuffer.appendBuffer(new Uint8Array(event.target.result));
+
+			console.log('appending chunk:' + self._chunkIndex);
+
+			if (self._chunkIndex == NUM_CHUNKS - 1) {
+				self._mediaSourceBuffer.addEventListener('updateend', () => {
+					self._mediaSource.endOfStream();
+				});
+
+			} else {
+				if (self._video.paused) {
+					self._video.play(); // Start playing after 1st chunk is appended.
+				}
+
+				self._chunkIndex += 1;
+				self._readChunk(chunkSize, file);
+			}
+		};
+
+		reader.readAsArrayBuffer(chunk);
+	}
+
+
+
+	
+
+
 }
 
 new Main();
