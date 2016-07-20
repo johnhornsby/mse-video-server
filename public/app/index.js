@@ -23,6 +23,7 @@ class Main {
 	_init() {
 		this._socket = io('http://localhost:3000');
 		this._socket.on('connect', ::this._onSocketConnect);
+		this._socket.on('receive video data', ::this._onReceiveVideoData);
 	}
 
 
@@ -31,8 +32,14 @@ class Main {
 	}
 
 
-	_onSocketGetVideoData(data) {
-		this._data = data;
+	_onSocketGetVideoData() {
+		
+	}
+
+	_onReceiveVideoData(data) {
+		// const uint8array = new Uint8Array(data.buffer);
+
+		this._data = data.buffer;
 
 		this._video = document.querySelector('video'); 
 

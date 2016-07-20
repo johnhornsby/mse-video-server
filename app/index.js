@@ -14,12 +14,14 @@ io.on('connection', function(socket){
     console.log('user disconnected');
   });
 
-  socket.on('get video data', function (cb) {
-  	fs.readFile(__dirname + '/test.webm', 'binary', function(err, data) {
+  socket.on('get video data', function () {
+    // no encoding of buffer, read it raw
+  	fs.readFile(__dirname + '/test.webm', function(err, data) {
   		if (err) {
   			console.log(err);
   		} else {
-  			cb(data);
+        // send the raw data, (ArrayBuffer)
+  			socket.emit('receive video data', {buffer: data})
   		}
   	});
   });
