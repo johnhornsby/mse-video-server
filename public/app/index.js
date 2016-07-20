@@ -35,21 +35,17 @@ class Main {
 		const self = this;
 
 		co(function *() {
-			yield [
-				self._initSocketConnection(),
-				self._initMediaSource()
-			];
-			
-			self._onSocketGetVideoData();
 
-		}).catch((err) => {
-			console.error(err.stack);
-		});
+			// init socket and mediaSource in parallel
+			yield [ self._initSocketConnection(), self._initMediaSource() ];
+
+		}).then(self._onSocketGetVideoData, self._onError);
 	}
 
 
 	_bind() {
 		this._onReceiveVideoData = ::this._onReceiveVideoData;
+		this._onSocketGetVideoData = ::this._onSocketGetVideoData;
 	}
 
 
@@ -95,12 +91,17 @@ class Main {
 		this._mediaSourceBuffer.appendBuffer(arrayBuffer);
 
 		if (this._video.paused) {
-			this._video.play(); // Start playing after 1st chunk is
+			this._video.play(); // Start playing if paused
 		}
 
 		this._mediaSourceBuffer.addEventListener('updateend', () => {
 			this._mediaSource.endOfStream();
 		});
+	}
+
+
+	_onError(err) {
+		console.error(err.stack);
 	}
 
 }
