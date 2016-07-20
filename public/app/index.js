@@ -1,9 +1,11 @@
+
+import 'babel-polyfill';
 import io from 'socket.io-client';
+import co from 'co';
 
-
-const NUM_CHUNKS = 5;
 
 class Main {
+
 
 	_mediaSource = null;
 
@@ -15,50 +17,82 @@ class Main {
 
 	_data = null;
 
+
 	constructor() {
 		this._init();
 	}
 
 
+
+
+
+
 	_init() {
-		this._socket = io('http://localhost:3000');
-		this._socket.on('connect', ::this._onSocketConnect);
-		this._socket.on('receive video data', ::this._onReceiveVideoData);
+		this._video = document.querySelector('video');
+
+		this._bind();
+
+		const self = this;
+
+		co(function *() {
+			yield [
+				self._initSocketConnection(),
+				self._initMediaSource()
+			];
+			
+			self._onSocketGetVideoData();
+
+		}).catch((err) => {
+			console.error(err.stack);
+		});
 	}
 
 
-	_onSocketConnect() {
-		this._socket.emit('get video data', ::this._onSocketGetVideoData);
+	_bind() {
+		this._onReceiveVideoData = ::this._onReceiveVideoData;
+	}
+
+
+	_initSocketConnection() {
+		return new Promise((resolve, reject) =>  {
+			this._socket = io('http://localhost:3000');
+			this._socket.on('connect', () => {
+
+				console.log('socket ready');
+
+				resolve();
+			});
+		});
+	}
+
+
+	_initMediaSource() {
+		return new Promise((resolve, reject) => {
+			const mediaSource = this._mediaSource = new MediaSource();
+
+			mediaSource.addEventListener('sourceopen', () => {
+				
+				this._mediaSourceBuffer = mediaSource.addSourceBuffer('video/webm; codecs="vorbis,vp8"');
+
+				console.log('mediaSource readyState: ' + mediaSource.readyState);
+
+				resolve(mediaSource);
+			});
+
+			this._video.src = window.URL.createObjectURL(mediaSource);
+		});
 	}
 
 
 	_onSocketGetVideoData() {
-		
+		this._socket.emit('get video data', this._onReceiveVideoData);
 	}
+
 
 	_onReceiveVideoData(data) {
-		// const uint8array = new Uint8Array(data.buffer);
+		const arrayBuffer = data.buffer;
 
-		this._data = data.buffer;
-
-		this._video = document.querySelector('video'); 
-
-		this._mediaSource = new MediaSource();
-
-		const sourceURL = window.URL.createObjectURL(this._mediaSource);
-
-		this._video.src = sourceURL;
-
-		this._mediaSource.addEventListener('sourceopen', ::this._onSourceOpen, false);
-	}
-
-
-	_onSourceOpen(event) {
-		this._mediaSourceBuffer = this._mediaSource.addSourceBuffer('video/webm; codecs="vorbis,vp8"');
-
-		console.log('mediaSource readyState: ' + this._mediaSource.readyState);
-
-		this._mediaSourceBuffer.appendBuffer(this._data);
+		this._mediaSourceBuffer.appendBuffer(arrayBuffer);
 
 		if (this._video.paused) {
 			this._video.play(); // Start playing after 1st chunk is
@@ -68,8 +102,6 @@ class Main {
 			this._mediaSource.endOfStream();
 		});
 	}
-
-
 
 }
 

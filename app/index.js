@@ -3,9 +3,6 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var fs = require('fs');
 
-// app.get('/', function(req, res){
-//   res.sendFile(__dirname + '/index.html');
-// });
 
 io.on('connection', function(socket){
   console.log('a user connected');
@@ -14,18 +11,19 @@ io.on('connection', function(socket){
     console.log('user disconnected');
   });
 
-  socket.on('get video data', function () {
+  socket.on('get video data', function (cb) {
     // no encoding of buffer, read it raw
+    console.log('get video data');
+
   	fs.readFile(__dirname + '/test.webm', function(err, data) {
   		if (err) {
   			console.log(err);
   		} else {
         // send the raw data, (ArrayBuffer)
-  			socket.emit('receive video data', {buffer: data})
+        cb({buffer: data});
   		}
   	});
   });
-
 });
 
 http.listen(3000, function(){
